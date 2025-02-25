@@ -30,5 +30,8 @@ This project is released under the [the MIT License](LICENSE).
 [![Star History Chart](https://api.star-history.com/svg?repos=TIGER-AI-Lab/TheoremExplainAgent&type=Date)](https://star-history.com/#TIGER-AI-Lab/TheoremExplainAgent&Date)
 
 ## 💞 Acknowledgements
+
+We want to thank [VoteeAI](https://votee.ai/) for sponsoring API keys to access the close-sourced models.
+
 The code is built upon the below repositories, we thank all the contributors for open-sourcing.
 * [Manim Community](https://www.manim.community/)
