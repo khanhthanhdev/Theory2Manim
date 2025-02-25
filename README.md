@@ -15,20 +15,6 @@ This repo contains the codebase for our paper TheoremExplainAgent: Towards Multi
 TheoremExplainAgent is an AI system that generates long-form Manim videos to visually explain theorems, proving its deep understanding while uncovering reasoning flaws that text alone often hides.
 
 
-## 📰 News
-* 2024 Oct 29: Paper accepted to TMLR 2024.
-* 2024 Apr 16: Local Gradio demo now supports edits up to 16 seconds (128 frames).
-* 2024 Apr 11: Added local gradio demo for AnyV2V(i2vgen-xl)+[InstantStyle](https://github.com/InstantStyle/InstantStyle).
-* 2024 Apr 7: Added sections [the showcases](https://github.com/TIGER-AI-Lab/AnyV2V/issues/6). Share your AnyV2V Edits with us! 
-* 2024 Apr 7: We recommend using [InstantStyle](https://github.com/InstantStyle/InstantStyle) with AnyV2V for Video Stylization! Check out [the demo!](https://twitter.com/vinesmsuic/status/1777170927500787782)!
-* 2024 Apr 3: [HuggingFace Demo](https://huggingface.co/spaces/TIGER-Lab/AnyV2V) is available!
-* 2024 Apr 2: Added local Gradio demo for AnyV2V(i2vgen-xl).
-* 2024 Mar 24: Added [Replicate demo](https://replicate.com/cjwbw/anyv2v) for AnyV2V(i2vgen-xl). Thanks [@chenxwh](https://github.com/chenxwh) for the effort!!
-* 2024 Mar 22: Code released.
-* 2024 Mar 21: Our paper is featured on [Huggingface Daily Papers](https://huggingface.co/papers/2403.14468)!
-* 2024 Mar 21: Paper available on [Arxiv](https://arxiv.org/abs/2403.14468). AnyV2V is the first work to leverage I2V models in Video Editing!
-
-
 ## 🖊️ Citation
 
 Please kindly cite our paper if you use our code, data, models or results:
