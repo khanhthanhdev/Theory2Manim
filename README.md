@@ -8,7 +8,7 @@
 [![GitHub](https://img.shields.io/github/stars/TIGER-AI-Lab/TheoremExplainAgent?style=social)](https://github.com/TIGER-AI-Lab/TheoremExplainAgent)
 [![Hits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2FTIGER-AI-Lab%2FTheoremExplainAgent&count_bg=%23C83DB9&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=visitors&edge_flat=false)](https://hits.seeyoufarm.com)
 
-This repo contains the codebase for our paper TheoremExplainAgent: Towards Multimodal Explanations for LLM Theorem Understanding
+This repo contains the codebase for our paper [TheoremExplainAgent: Towards Multimodal Explanations for LLM Theorem Understanding](https://arxiv.org/abs/2502.19400)
 
 ## Introduction
 TheoremExplainAgent is an AI system that generates long-form Manim videos to visually explain theorems, proving its deep understanding while uncovering reasoning flaws that text alone often hides.
