@@ -13,6 +13,12 @@ This repo contains the codebase for our paper [TheoremExplainAgent: Towards Mult
 ## Introduction
 TheoremExplainAgent is an AI system that generates long-form Manim videos to visually explain theorems, proving its deep understanding while uncovering reasoning flaws that text alone often hides.
 
+
+
+https://github.com/user-attachments/assets/17f2f4f2-8f2c-4abc-b377-ac92ebda69f3
+
+
+
 ## QuickStart
 
 Under construction
