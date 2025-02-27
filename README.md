@@ -22,7 +22,15 @@ Under construction
 
 Please kindly cite our paper if you use our code, data, models or results:
 ```bibtex
-TBD
+@misc{ku2025theoremexplainagentmultimodalexplanationsllm,
+      title={TheoremExplainAgent: Towards Multimodal Explanations for LLM Theorem Understanding}, 
+      author={Max Ku and Thomas Chong and Jonathan Leung and Krish Shah and Alvin Yu and Wenhu Chen},
+      year={2025},
+      eprint={2502.19400},
+      archivePrefix={arXiv},
+      primaryClass={cs.AI},
+      url={https://arxiv.org/abs/2502.19400}, 
+}
 ```
 
 ## 🎫 License
