@@ -110,6 +110,22 @@ python generate_video.py \
       --max_topic_concurrency 20 \
 ```
 
+### Generation with RAG
+Before using RAG, download the RAG documentation from this [Google Drive link](https://drive.google.com/file/d/1Tn6J_JKVefFZRgZbjns93KLBtI9ullRv/view?usp=sharing). After downloading, unzip the file. For example, if you unzip it to `data/rag/manim_docs`, then you should set `--manim_docs_path` to `data/rag/manim_docs`. The vector database will be created the first time you run with RAG.
+
+```shell
+python generate_video.py \
+            --model "openai/o3-mini" \
+            --helper_model "openai/o3-mini" \
+            --output_dir "output/with_rag/o3-mini/vtutorbench_easy/math" \
+            --topic "Big O notation" \
+            --context "most common type of asymptotic notation in computer science used to measure worst case complexity"
+            --use_rag \
+            --chroma_db_path "data/rag/chroma_db" \
+            --manim_docs_path "data/rag/manim_docs" \
+            --embedding_model "vertex_ai/text-embedding-005"
+```
+
 We support more options for generation, see below for more details:
 ```shell
 usage: generate_video.py [-h]
