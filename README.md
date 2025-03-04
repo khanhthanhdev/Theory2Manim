@@ -25,28 +25,59 @@ https://github.com/user-attachments/assets/17f2f4f2-8f2c-4abc-b377-ac92ebda69f3
 * 2025 Feb 27: Paper available on [Arxiv](https://arxiv.org/abs/2502.19400). Thanks AK for putting our paper on [HF Daily](https://huggingface.co/papers/2502.19400).
 
 ## Installation
+
+1. Setting up conda environment
 ```shell
 conda create --name tea python=3.12.8
 conda activate tea
 pip install -r requirements.txt
 ```
 
-Download the Kokoro model and voices using the commands.
+2. You may also need to install latex and other dependencies for Manim Community. Look at [Manim Installation Docs](https://docs.manim.community/en/stable/installation.html) for more details.
+
+3. Then Download the Kokoro model and voices using the commands to enable TTS service.
 
 ```shell
 mkdir -p models && wget -P models https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files/kokoro-v0_19.onnx && wget -P models https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files/voices.bin
 ```
 
-Create `.env` based on `.env.template`, filling in the environmental variables according to the models you choose to use.
+4. Create `.env` based on `.env.template`, filling in the environmental variables according to the models you choose to use.
 See [LiteLLM](https://docs.litellm.ai/docs/providers) for reference.
 
-You may also need to install latex and other dependencies for Manim Community. Look at [Manim Installation Docs](https://docs.manim.community/en/stable/installation.html) for more details.
+Your `.env` file should look like the following:
+```shell
+# OpenAI
+OPENAI_API_KEY=""
 
-Note that you need to do
+# Azure OpenAI
+AZURE_API_KEY=""
+AZURE_API_BASE=""
+AZURE_API_VERSION=""
+
+# Google Vertex AI
+VERTEXAI_PROJECT=""
+VERTEXAI_LOCATION=""
+GOOGLE_APPLICATION_CREDENTIALS=""
+
+# Google Gemini
+GEMINI_API_KEY=""
+
+...
+
+# Kokoro TTS Settings
+KOKORO_MODEL_PATH="models/kokoro-v0_19.onnx"
+KOKORO_VOICES_PATH="models/voices.bin"
+KOKORO_DEFAULT_VOICE="af"
+KOKORO_DEFAULT_SPEED="1.0"
+KOKORO_DEFAULT_LANG="en-us"
+```
+Fill in the API keys according to the model you wanted to use.
+
+5. Configure Python path. Note that you need to do
 ```shell
 export PYTHONPATH=$(pwd):$PYTHONPATH
 ```
-To make it work.
+To make it work. Otherwise you may encounter import issues.
 
 ### Generation (Single topic)
 ```shell
