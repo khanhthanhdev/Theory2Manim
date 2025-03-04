@@ -19,6 +19,10 @@ TheoremExplainAgent is an AI system that generates long-form Manim videos to vis
 https://github.com/user-attachments/assets/17f2f4f2-8f2c-4abc-b377-ac92ebda69f3
 
 
+## 📰 News
+* 2025 Mar 3: Generation code and Evaluation code released. Thanks for the wait!
+<!--* 2025 Mar 3: Reach 404 stars without code.-->
+* 2025 Feb 27: Paper available on [Arxiv](https://arxiv.org/abs/2502.19400). Thanks AK for putting our paper on [HF Daily](https://huggingface.co/papers/2502.19400).
 
 ## Installation
 ```shell
