@@ -20,10 +20,170 @@ https://github.com/user-attachments/assets/17f2f4f2-8f2c-4abc-b377-ac92ebda69f3
 
 
 
-## QuickStart
+## Installation
+```shell
+conda create --name tea python=3.12.8
+conda activate tea
+pip install -r requirements.txt
+```
 
-Under construction
+Download the Kokoro model and voices using the commands.
 
+```shell
+mkdir -p models && wget -P models https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files/kokoro-v0_19.onnx && wget -P models https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files/voices.bin
+```
+
+Create `.env` based on `.env.template`, filling in the environmental variables according to the models you choose to use.
+See [LiteLLM](https://docs.litellm.ai/docs/providers) for reference.
+
+You may also need to install latex and other dependencies for Manim Community. Look at [Manim Installation Docs](https://docs.manim.community/en/stable/installation.html) for more details.
+
+Note that you need to do
+```shell
+export PYTHONPATH=$(pwd):$PYTHONPATH
+```
+To make it work.
+
+### Generation (Single topic)
+```shell
+python generate_video.py \
+      --model "openai/o3-mini" \
+      --helper_model "openai/o3-mini" \
+      --output_dir "output/your_exp_name" \
+      --topic "your_topic" \
+      --context "description of your topic, e.g. 'This is a topic about the properties of a triangle'" \
+```
+
+Example:
+```shell
+python generate_video.py \
+      --model "openai/o3-mini" \
+      --helper_model "openai/o3-mini" \
+      --output_dir "output/my_exp_name" \
+      --topic "Big O notation" \
+      --context "most common type of asymptotic notation in computer science used to measure worst case complexity" \
+```
+
+### Generation (in batch)
+```shell
+python generate_video.py \
+      --model "openai/o3-mini" \
+      --helper_model "openai/o3-mini" \
+      --output_dir "output/my_exp_name" \
+      --theorems_path data/thb_easy/math.json \
+      --max_scene_concurrency 7 \
+      --max_topic_concurrency 20 \
+```
+
+We support more options for generation, see below for more details:
+```shell
+usage: generate_video.py [-h]
+                         [--model]
+                         [--topic TOPIC] [--context CONTEXT]
+                         [--helper_model]
+                         [--only_gen_vid] [--only_combine] [--peek_existing_videos] [--output_dir OUTPUT_DIR] [--theorems_path THEOREMS_PATH]
+                         [--sample_size SAMPLE_SIZE] [--verbose] [--max_retries MAX_RETRIES] [--use_rag] [--use_visual_fix_code]
+                         [--chroma_db_path CHROMA_DB_PATH] [--manim_docs_path MANIM_DOCS_PATH]
+                         [--embedding_model {azure/text-embedding-3-large,vertex_ai/text-embedding-005}] [--use_context_learning]
+                         [--context_learning_path CONTEXT_LEARNING_PATH] [--use_langfuse] [--max_scene_concurrency MAX_SCENE_CONCURRENCY]
+                         [--max_topic_concurrency MAX_TOPIC_CONCURRENCY] [--debug_combine_topic DEBUG_COMBINE_TOPIC] [--only_plan] [--check_status]
+                         [--only_render] [--scenes SCENES [SCENES ...]]
+
+Generate Manim videos using AI
+
+options:
+  -h, --help            show this help message and exit
+  --model               Select the AI model to use
+  --topic TOPIC         Topic to generate videos for
+  --context CONTEXT     Context of the topic
+  --helper_model        Select the helper model to use
+  --only_gen_vid        Only generate videos to existing plans
+  --only_combine        Only combine videos
+  --peek_existing_videos, --peek
+                        Peek at existing videos
+  --output_dir OUTPUT_DIR
+                        Output directory
+  --theorems_path THEOREMS_PATH
+                        Path to theorems json file
+  --sample_size SAMPLE_SIZE, --sample SAMPLE_SIZE
+                        Number of theorems to sample
+  --verbose             Print verbose output
+  --max_retries MAX_RETRIES
+                        Maximum number of retries for code generation
+  --use_rag, --rag      Use Retrieval Augmented Generation
+  --use_visual_fix_code, --visual_fix_code
+                        Use VLM to fix code with rendered visuals
+  --chroma_db_path CHROMA_DB_PATH
+                        Path to Chroma DB
+  --manim_docs_path MANIM_DOCS_PATH
+                        Path to manim docs
+  --embedding_model {azure/text-embedding-3-large,vertex_ai/text-embedding-005}
+                        Select the embedding model to use
+  --use_context_learning
+                        Use context learning with example Manim code
+  --context_learning_path CONTEXT_LEARNING_PATH
+                        Path to context learning examples
+  --use_langfuse        Enable Langfuse logging
+  --max_scene_concurrency MAX_SCENE_CONCURRENCY
+                        Maximum number of scenes to process concurrently
+  --max_topic_concurrency MAX_TOPIC_CONCURRENCY
+                        Maximum number of topics to process concurrently
+  --debug_combine_topic DEBUG_COMBINE_TOPIC
+                        Debug combine videos
+  --only_plan           Only generate scene outline and implementation plans
+  --check_status        Check planning and code status for all theorems
+  --only_render         Only render scenes without combining videos
+  --scenes SCENES [SCENES ...]
+                        Specific scenes to process (if theorems_path is provided)
+```
+
+
+### Supported Models
+You can customize the allowed models by editing the `src/utils/allowed_models.json` file. This file specifies which `model` and `helper_model` the system is permitted to use. The model naming follows the LiteLLM convention. For details on how models should be named, please refer to the [LiteLLM documentation](https://docs.litellm.ai/docs/providers).
+
+
+### Evaluation
+Note that Gemini and GPT4o is required for evaluation.
+
+Currently, evaluation requires a video file and a subtitle file (SRT format).
+
+Video evaluation:
+```shell
+usage: evaluate.py [-h]
+                   [--model_text {gemini/gemini-1.5-pro-002,gemini/gemini-1.5-flash-002,gemini/gemini-2.0-flash-001,vertex_ai/gemini-1.5-flash-002,vertex_ai/gemini-1.5-pro-002,vertex_ai/gemini-2.0-flash-001,openai/o3-mini,gpt-4o,azure/gpt-4o,azure/gpt-4o-mini,bedrock/anthropic.claude-3-5-sonnet-20240620-v1:0,bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0,bedrock/anthropic.claude-3-5-haiku-20241022-v1:0,bedrock/us.anthropic.claude-3-7-sonnet-20250219-v1:0}]
+                   [--model_video {gemini/gemini-1.5-pro-002,gemini/gemini-2.0-flash-exp,gemini/gemini-2.0-pro-exp-02-05}]
+                   [--model_image {gemini/gemini-1.5-pro-002,gemini/gemini-1.5-flash-002,gemini/gemini-2.0-flash-001,vertex_ai/gemini-1.5-flash-002,vertex_ai/gemini-1.5-pro-002,vertex_ai/gemini-2.0-flash-001,openai/o3-mini,gpt-4o,azure/gpt-4o,azure/gpt-4o-mini,bedrock/anthropic.claude-3-5-sonnet-20240620-v1:0,bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0,bedrock/anthropic.claude-3-5-haiku-20241022-v1:0,bedrock/us.anthropic.claude-3-7-sonnet-20250219-v1:0}]
+                   [--eval_type {text,video,image,all}] --file_path FILE_PATH --output_folder OUTPUT_FOLDER [--retry_limit RETRY_LIMIT] [--combine] [--bulk_evaluate] [--target_fps TARGET_FPS]
+                   [--use_parent_folder_as_topic] [--max_workers MAX_WORKERS]
+
+Automatic evaluation of theorem explanation videos with LLMs
+
+options:
+  -h, --help            show this help message and exit
+  --model_text {gemini/gemini-1.5-pro-002,gemini/gemini-1.5-flash-002,gemini/gemini-2.0-flash-001,vertex_ai/gemini-1.5-flash-002,vertex_ai/gemini-1.5-pro-002,vertex_ai/gemini-2.0-flash-001,openai/o3-mini,gpt-4o,azure/gpt-4o,azure/gpt-4o-mini,bedrock/anthropic.claude-3-5-sonnet-20240620-v1:0,bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0,bedrock/anthropic.claude-3-5-haiku-20241022-v1:0,bedrock/us.anthropic.claude-3-7-sonnet-20250219-v1:0}
+                        Select the AI model to use for text evaluation
+  --model_video {gemini/gemini-1.5-pro-002,gemini/gemini-2.0-flash-exp,gemini/gemini-2.0-pro-exp-02-05}
+                        Select the AI model to use for video evaluation
+  --model_image {gemini/gemini-1.5-pro-002,gemini/gemini-1.5-flash-002,gemini/gemini-2.0-flash-001,vertex_ai/gemini-1.5-flash-002,vertex_ai/gemini-1.5-pro-002,vertex_ai/gemini-2.0-flash-001,openai/o3-mini,gpt-4o,azure/gpt-4o,azure/gpt-4o-mini,bedrock/anthropic.claude-3-5-sonnet-20240620-v1:0,bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0,bedrock/anthropic.claude-3-5-haiku-20241022-v1:0,bedrock/us.anthropic.claude-3-7-sonnet-20250219-v1:0}
+                        Select the AI model to use for image evaluation
+  --eval_type {text,video,image,all}
+                        Type of evaluation to perform
+  --file_path FILE_PATH
+                        Path to a file or a theorem folder
+  --output_folder OUTPUT_FOLDER
+                        Directory to store the evaluation files
+  --retry_limit RETRY_LIMIT
+                        Number of retry attempts for each inference
+  --combine             Combine all results into a single JSON file
+  --bulk_evaluate       Evaluate a folder of theorems together
+  --target_fps TARGET_FPS
+                        Target FPS for video processing. If not set, original video FPS will be used
+  --use_parent_folder_as_topic
+                        Use parent folder name as topic name for single file evaluation
+  --max_workers MAX_WORKERS
+                        Maximum number of concurrent workers for parallel processing
+```
+* For `file_path`, it is recommended to pass a folder containing both an MP4 file and an SRT file.
 
 ## 🖊️ Citation
 
@@ -50,7 +210,17 @@ This project is released under the [the MIT License](LICENSE).
 
 ## 💞 Acknowledgements
 
-We want to thank [VoteeAI](https://votee.ai/) for sponsoring API keys to access the close-sourced models.
+We want to thank [Votee AI](https://votee.ai/) for sponsoring API keys to access the close-sourced models.
 
 The code is built upon the below repositories, we thank all the contributors for open-sourcing.
 * [Manim Community](https://www.manim.community/)
+* [kokoro-manim-voiceover](https://github.com/xposed73/kokoro-manim-voiceover)
+* [manim-physics](https://github.com/Matheart/manim-physics)
+* [manim-Chemistry](https://github.com/UnMolDeQuimica/manim-Chemistry)
+* [ManimML](https://github.com/helblazer811/ManimML)
+* [manim-dsa](https://github.com/F4bbi/manim-dsa)
+* [manim-circuit](https://github.com/Mr-FuzzyPenguin/manim-circuit)
+
+## 🚨 Disclaimer
+
+**This work is intended for research purposes only. The authors do not encourage or endorse the use of this codebase for commercial applications. The code is provided "as is" without any warranties, and users assume all responsibility for its use.**
