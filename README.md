@@ -119,7 +119,7 @@ python generate_video.py \
             --helper_model "openai/o3-mini" \
             --output_dir "output/with_rag/o3-mini/vtutorbench_easy/math" \
             --topic "Big O notation" \
-            --context "most common type of asymptotic notation in computer science used to measure worst case complexity"
+            --context "most common type of asymptotic notation in computer science used to measure worst case complexity" \
             --use_rag \
             --chroma_db_path "data/rag/chroma_db" \
             --manim_docs_path "data/rag/manim_docs" \
