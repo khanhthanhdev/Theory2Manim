@@ -79,6 +79,14 @@ export PYTHONPATH=$(pwd):$PYTHONPATH
 ```
 To make it work. Otherwise you may encounter import issues.
 
+
+
+### Supported Models
+<!--You can customize the allowed models by editing the `src/utils/allowed_models.json` file. This file specifies which `model` and `helper_model` the system is permitted to use.--> 
+The model naming follows the LiteLLM convention. For details on how models should be named, please refer to the [LiteLLM documentation](https://docs.litellm.ai/docs/providers).
+
+
+
 ### Generation (Single topic)
 ```shell
 python generate_video.py \
@@ -188,12 +196,6 @@ options:
                         Specific scenes to process (if theorems_path is provided)
 ```
 
-
-### Supported Models
-<!--You can customize the allowed models by editing the `src/utils/allowed_models.json` file. This file specifies which `model` and `helper_model` the system is permitted to use.--> 
-The model naming follows the LiteLLM convention. For details on how models should be named, please refer to the [LiteLLM documentation](https://docs.litellm.ai/docs/providers).
-
-
 ### Evaluation
 Note that Gemini and GPT4o is required for evaluation.
 
@@ -237,6 +239,15 @@ options:
 ```
 * For `file_path`, it is recommended to pass a folder containing both an MP4 file and an SRT file.
 
+
+## ❓ FAQ
+
+Q: Error `src.utils.kokoro_voiceover import KokoroService  # You MUST import like this as this is our custom voiceover service. ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ModuleNotFoundError: No module named 'src'`.
+A: Please run `export PYTHONPATH=$(pwd):$PYTHONPATH` when you start a new terminal.
+
+Q: Error `Files not found`
+A: Check your Manim installation.
+
 ## 🖊️ Citation
 
 Please kindly cite our paper if you use our code, data, models or results:
@@ -276,3 +287,5 @@ The code is built upon the below repositories, we thank all the contributors for
 ## 🚨 Disclaimer
 
 **This work is intended for research purposes only. The authors do not encourage or endorse the use of this codebase for commercial applications. The code is provided "as is" without any warranties, and users assume all responsibility for its use.**
+
+Tested Environment: MacOS, Linux
