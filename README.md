@@ -242,11 +242,11 @@ options:
 
 ## ❓ FAQ
 
-Q: Error `src.utils.kokoro_voiceover import KokoroService  # You MUST import like this as this is our custom voiceover service. ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ModuleNotFoundError: No module named 'src'`.
-A: Please run `export PYTHONPATH=$(pwd):$PYTHONPATH` when you start a new terminal.
+Q: Error `src.utils.kokoro_voiceover import KokoroService  # You MUST import like this as this is our custom voiceover service. ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ModuleNotFoundError: No module named 'src'`. <br>
+A: Please run `export PYTHONPATH=$(pwd):$PYTHONPATH` when you start a new terminal. <br>
 
-Q: Error `Files not found`
-A: Check your Manim installation.
+Q: Error `Files not found` <br>
+A: Check your Manim installation. <br>
 
 ## 🖊️ Citation
 
