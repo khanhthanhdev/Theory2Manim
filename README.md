@@ -239,6 +239,8 @@ options:
 
 ## ❓ FAQ
 
+The FAQ should cover the most common errors you could encounter. If you see something new, report it on issues.
+
 Q: Error `src.utils.kokoro_voiceover import KokoroService  # You MUST import like this as this is our custom voiceover service. ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ModuleNotFoundError: No module named 'src'`. <br>
 A: Please run `export PYTHONPATH=$(pwd):$PYTHONPATH` when you start a new terminal. <br>
 
@@ -248,8 +250,12 @@ A: Check your Manim installation. <br>
 Q: Error `latex ...` <br>
 A: Check your latex installation. <br>
 
-Q: The output is not showing response? <br>
+Q: The output log is not showing response? <br>
+A: It could be API-related issues. Make sure your `.env` file is properly configured (fill in your API keys), or you can enable litellm debug mode to figure out the issues. <be>
+
+Q: Plans / Scenes are missing? <br>
 A: It could be API-related issues. Make sure your `.env` file is properly configured (fill in your API keys), or you can enable litellm debug mode to figure out the issues. <br>
+
 
 ## 🖊️ Citation
 
