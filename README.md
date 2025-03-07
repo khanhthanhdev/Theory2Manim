@@ -73,19 +73,16 @@ KOKORO_DEFAULT_LANG="en-us"
 ```
 Fill in the API keys according to the model you wanted to use.
 
-5. Configure Python path. Note that you need to do
+5. Configure Python path. Note that you need to configure the python path to make it work. Otherwise you may encounter import issues (like not being able to import src etc.)
 ```shell
 export PYTHONPATH=$(pwd):$PYTHONPATH
 ```
-To make it work. Otherwise you may encounter import issues.
 
-
+Look at the FAQ section in this README doc if you encountered any errors.
 
 ### Supported Models
 <!--You can customize the allowed models by editing the `src/utils/allowed_models.json` file. This file specifies which `model` and `helper_model` the system is permitted to use.--> 
 The model naming follows the LiteLLM convention. For details on how models should be named, please refer to the [LiteLLM documentation](https://docs.litellm.ai/docs/providers).
-
-
 
 ### Generation (Single topic)
 ```shell
@@ -247,6 +244,12 @@ A: Please run `export PYTHONPATH=$(pwd):$PYTHONPATH` when you start a new termin
 
 Q: Error `Files not found` <br>
 A: Check your Manim installation. <br>
+
+Q: Error `latex ...` <br>
+A: Check your latex installation. <br>
+
+Q: The output is not showing response? <br>
+A: It could be API-related issues. Make sure your `.env` file is properly configured (fill in your API keys), or you can enable litellm debug mode to figure out the issues. <br>
 
 ## 🖊️ Citation
 
