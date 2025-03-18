@@ -26,7 +26,7 @@ https://github.com/user-attachments/assets/17f2f4f2-8f2c-4abc-b377-ac92ebda69f3
 
 ## Installation
 
-> **Look at the FAQ section in this README doc if you encountered any errors. If that didnt help, create a issue**<br>
+> **Look at the [FAQ section in this README doc](https://github.com/TIGER-AI-Lab/TheoremExplainAgent?tab=readme-ov-file#-faq) if you encountered any errors. If that didnt help, create a issue**<br>
 
 1. Setting up conda environment
 ```shell
@@ -80,7 +80,7 @@ Fill in the API keys according to the model you wanted to use.
 export PYTHONPATH=$(pwd):$PYTHONPATH
 ```
 
-> **Look at the FAQ section in this README doc if you encountered any errors. If that didnt help, create a issue**<br>
+> **Look at the [FAQ section in this README doc](https://github.com/TIGER-AI-Lab/TheoremExplainAgent?tab=readme-ov-file#-faq) if you encountered any errors. If that didnt help, create a issue**<br>
 
 ## Generation
 
