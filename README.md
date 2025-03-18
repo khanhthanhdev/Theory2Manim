@@ -26,6 +26,8 @@ https://github.com/user-attachments/assets/17f2f4f2-8f2c-4abc-b377-ac92ebda69f3
 
 ## Installation
 
+> **Look at the FAQ section in this README doc if you encountered any errors. If that didnt help, create a issue**<br>
+
 1. Setting up conda environment
 ```shell
 conda create --name tea python=3.12.8
@@ -78,7 +80,9 @@ Fill in the API keys according to the model you wanted to use.
 export PYTHONPATH=$(pwd):$PYTHONPATH
 ```
 
-Look at the FAQ section in this README doc if you encountered any errors.
+> **Look at the FAQ section in this README doc if you encountered any errors. If that didnt help, create a issue**<br>
+
+## Generation
 
 ### Supported Models
 <!--You can customize the allowed models by editing the `src/utils/allowed_models.json` file. This file specifies which `model` and `helper_model` the system is permitted to use.--> 
@@ -193,7 +197,7 @@ options:
                         Specific scenes to process (if theorems_path is provided)
 ```
 
-### Evaluation
+## Evaluation
 Note that Gemini and GPT4o is required for evaluation.
 
 Currently, evaluation requires a video file and a subtitle file (SRT format).
