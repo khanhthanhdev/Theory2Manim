@@ -36,6 +36,11 @@ pip install -r requirements.txt
 ```
 
 2. You may also need to install latex and other dependencies for Manim Community. Look at [Manim Installation Docs](https://docs.manim.community/en/stable/installation.html) for more details.
+```shell
+# You might need these dependencies if you are using Linux Ubuntu:
+sudo apt-get install portaudio19-dev
+sudo apt-get install libsdl-pango-dev
+```
 
 3. Then Download the Kokoro model and voices using the commands to enable TTS service.
 
