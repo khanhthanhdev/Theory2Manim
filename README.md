@@ -51,6 +51,11 @@ mkdir -p models && wget -P models https://github.com/thewh1teagle/kokoro-onnx/re
 4. Create `.env` based on `.env.template`, filling in the environmental variables according to the models you choose to use.
 See [LiteLLM](https://docs.litellm.ai/docs/providers) for reference.
 
+```shell
+touch .env
+```
+Then open the `.env` file and edit it with whatever text editor you like.
+
 Your `.env` file should look like the following:
 ```shell
 # OpenAI
