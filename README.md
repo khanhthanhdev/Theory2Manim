@@ -250,6 +250,18 @@ options:
 ```
 * For `file_path`, it is recommended to pass a folder containing both an MP4 file and an SRT file.
 
+## Misc: Modify the system prompt in TheoremExplainAgent
+
+If you want to modify the system prompt, you need to:
+
+1. Modify files in `task_generator/prompts_raw` folder.
+2. Run `task_generator/parse_prompt.py` to rebuild the `__init__.py` file.
+
+```python
+cd task_generator
+python parse_prompt.py
+cd ..
+```
 
 ## ❓ FAQ
 
