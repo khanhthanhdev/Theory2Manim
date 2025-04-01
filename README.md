@@ -1,4 +1,4 @@
-# TheoremExplainAgent
+# TheoremExplainAgent (TEA) 🍵
 [![arXiv](https://img.shields.io/badge/arXiv-2502.19400-b31b1b.svg)](https://arxiv.org/abs/2502.19400)
 <a href='https://huggingface.co/papers/2502.19400'><img src='https://img.shields.io/static/v1?label=Paper&message=Huggingface&color=orange'></a> 
 
