@@ -263,6 +263,26 @@ python parse_prompt.py
 cd ..
 ```
 
+## TheoremExplainBench (TEB)
+
+TheoremExplainBench can be found on https://huggingface.co/datasets/TIGER-Lab/TheoremExplainBench.
+
+How to use:
+```python
+import datasets
+dataset = datasets.load_dataset("TIGER-Lab/TheoremExplainBench")
+```
+
+Dataset info:
+```shell
+DatasetDict({
+    train: Dataset({
+        features: ['uid', 'subject', 'difficulty', 'theorem', 'description', 'subfield'],
+        num_rows: 240
+    })
+})
+```
+
 ## ❓ FAQ
 
 The FAQ should cover the most common errors you could encounter. If you see something new, report it on issues.
