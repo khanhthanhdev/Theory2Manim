@@ -90,6 +90,8 @@ Fill in the API keys according to the model you wanted to use.
 export PYTHONPATH=$(pwd):$PYTHONPATH
 ```
 
+6. (Optional) To setup RAG, See [https://github.com/TIGER-AI-Lab/TheoremExplainAgent?tab=readme-ov-file#generation-with-rag](https://github.com/TIGER-AI-Lab/TheoremExplainAgent?tab=readme-ov-file#generation-with-rag).
+
 > **Look at the [FAQ section in this README doc](https://github.com/TIGER-AI-Lab/TheoremExplainAgent?tab=readme-ov-file#-faq) if you encountered any errors. If that didnt help, create a issue**<br>
 
 ## Generation
