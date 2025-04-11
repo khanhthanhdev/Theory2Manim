@@ -14,6 +14,7 @@ import litellm
 import tiktoken
 from tqdm import tqdm
 from langfuse import Langfuse
+from langchain_community.embeddings import HuggingFaceEmbeddings
 
 from mllm_tools.utils import _prepare_text_inputs
 from task_generator import get_prompt_detect_plugins
@@ -107,40 +108,58 @@ class RAGVectorStore:
         return self.core_vector_store  # Return core store for backward compatibility
 
     def _get_embedding_function(self) -> Embeddings:
-        """Creates an embedding function using litellm.
+        """Creates an embedding function using either LiteLLM or HuggingFace.
+
+        If the embedding_model starts with 'hf:' it will use HuggingFaceEmbeddings locally.
+        Otherwise, it will use LiteLLM for cloud-based embeddings.
 
         Returns:
-            Embeddings: A LangChain Embeddings instance that wraps litellm functionality
+            Embeddings: A LangChain Embeddings instance
         """
-        class LiteLLMEmbeddings(Embeddings):
-            def __init__(self, embedding_model):
-                self.embedding_model = embedding_model
-
-            def embed_documents(self, texts: list[str]) -> list[list[float]]:
-                litellm.success_callback = []
-                litellm.failure_callback = []
-                response = embedding(
-                    model=self.embedding_model,
-                    input=texts,
-                    task_type="CODE_RETRIEVAL_QUERY" if self.embedding_model == "vertex_ai/text-embedding-005" else None
-                )
-                litellm.success_callback = ["langfuse"]
-                litellm.failure_callback = ["langfuse"]
-                return [r["embedding"] for r in response["data"]]
+        # Check if we're using a HuggingFace model locally
+        if self.embedding_model.startswith('hf:'):
+            # Extract the model name after the 'hf:' prefix
+            model_name = self.embedding_model[3:]
+            print(f"Using HuggingFaceEmbeddings with model: {model_name}")
             
-            def embed_query(self, text: str) -> list[float]:
-                litellm.success_callback = []
-                litellm.failure_callback = []
-                response = embedding(
-                    model=self.embedding_model,
-                    input=[text],
-                    task_type="CODE_RETRIEVAL_QUERY" if self.embedding_model == "vertex_ai/text-embedding-005" else None
-                )
-                litellm.success_callback = ["langfuse"]
-                litellm.failure_callback = ["langfuse"]
-                return response["data"][0]["embedding"]
-        
-        return LiteLLMEmbeddings(self.embedding_model)
+            # Create HuggingFaceEmbeddings with the specified model
+            return HuggingFaceEmbeddings(
+                model_name=model_name,
+                model_kwargs={'device': 'cpu'},  # Use CPU by default, can be changed to 'cuda' for GPU
+                encode_kwargs={'normalize_embeddings': True}  # Normalize embeddings for better similarity search
+            )
+        else:
+            # Use LiteLLM for cloud-based embeddings
+            class LiteLLMEmbeddings(Embeddings):
+                def __init__(self, embedding_model):
+                    self.embedding_model = embedding_model
+                    self.parent_observation_id = None
+
+                def embed_documents(self, texts: list[str]) -> list[list[float]]:
+                    litellm.success_callback = []
+                    litellm.failure_callback = []
+                    response = embedding(
+                        model=self.embedding_model,
+                        input=texts,
+                        task_type="CODE_RETRIEVAL_QUERY" if self.embedding_model == "vertex_ai/text-embedding-005" else None
+                    )
+                    litellm.success_callback = ["langfuse"]
+                    litellm.failure_callback = ["langfuse"]
+                    return [r["embedding"] for r in response["data"]]
+                
+                def embed_query(self, text: str) -> list[float]:
+                    litellm.success_callback = []
+                    litellm.failure_callback = []
+                    response = embedding(
+                        model=self.embedding_model,
+                        input=[text],
+                        task_type="CODE_RETRIEVAL_QUERY" if self.embedding_model == "vertex_ai/text-embedding-005" else None
+                    )
+                    litellm.success_callback = ["langfuse"]
+                    litellm.failure_callback = ["langfuse"]
+                    return response["data"][0]["embedding"]
+            
+            return LiteLLMEmbeddings(self.embedding_model)
 
     def _create_core_store(self):
         """Creates the main ChromaDB vector store for Manim core documentation.

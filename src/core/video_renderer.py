@@ -271,9 +271,9 @@ class VideoRenderer:
             if not subtitles_found:
                 scene_subtitles.append(None)
 
-        if len(scene_videos) != scene_count:
-            print("Not all videos/subtitles are found, aborting video combination.")
-            return
+        # if len(scene_videos) != scene_count:
+        #     print("Not all videos/subtitles are found, aborting video combination.")
+        #     return
 
         try:
             import ffmpeg # You might need to install ffmpeg-python package: pip install ffmpeg-python

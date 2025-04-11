@@ -32,7 +32,9 @@ from task_generator.prompts_raw import (_code_font_size, _code_disable, _code_li
 # Load allowed models list from JSON file
 allowed_models_path = os.path.join(os.path.dirname(__file__), 'src', 'utils', 'allowed_models.json')
 with open(allowed_models_path, 'r') as f:
-    allowed_models = json.load(f).get("allowed_models", [])
+    allowed_models_data = json.load(f)
+    allowed_models = allowed_models_data.get("allowed_models", [])
+    embedding_models = allowed_models_data.get("embedding_models", [])
 
 load_dotenv(override=True)
 
@@ -685,9 +687,8 @@ if __name__ == "__main__":
     parser.add_argument('--chroma_db_path', type=str, default=Config.CHROMA_DB_PATH, help="Path to Chroma DB") # Use Config
     parser.add_argument('--manim_docs_path', type=str, default=Config.MANIM_DOCS_PATH, help="Path to manim docs") # Use Config
     parser.add_argument('--embedding_model', type=str,
-                       default=Config.EMBEDDING_MODEL, # Use Config
-                       choices=["azure/text-embedding-3-large", "vertex_ai/text-embedding-005"],
-                       help='Select the embedding model to use')
+                       default=Config.EMBEDDING_MODEL,
+                       help='Model to use for embeddings. For HuggingFace models, prefix with "hf:" (e.g., "hf:sentence-transformers/all-MiniLM-L6-v2")')
     parser.add_argument('--use_context_learning', action='store_true',
                        help='Use context learning with example Manim code')
     parser.add_argument('--context_learning_path', type=str,

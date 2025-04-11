@@ -1,4 +1,12 @@
 # This file is generated automatically through parse_prompt.py
+import sys
+import os
+# Adjusting the path to add the project root (which contains the "src" folder) to the system path.
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
+from manim import *
+from manim import config as global_config
+from manim_voiceover import VoiceoverScene
+from src.utils.kokoro_voiceover import KokoroService # You MUST import like this as this is our custom voiceover service.
 
 _prompt_context_learning_scene_plan = """Here are some example scene plans to help guide your scene planning:
 

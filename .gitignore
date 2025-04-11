@@ -1,3 +1,6 @@
 **/__pycache__/
 
 .env
+data/rag
+models
+output
