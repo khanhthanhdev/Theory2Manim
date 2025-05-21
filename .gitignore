@@ -1,6 +1,6 @@
 **/__pycache__/
 
 .env
-data/rag
+data/rag/manim_docs
 models
 output

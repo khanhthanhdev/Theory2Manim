@@ -14,7 +14,7 @@ import litellm
 import tiktoken
 from tqdm import tqdm
 from langfuse import Langfuse
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain.embeddings.huggingface import HuggingFaceEmbeddings
 
 from mllm_tools.utils import _prepare_text_inputs
 from task_generator import get_prompt_detect_plugins
@@ -38,7 +38,7 @@ class RAGVectorStore:
     def __init__(self, 
                  chroma_db_path: str = "chroma_db",
                  manim_docs_path: str = "rag/manim_docs",
-                 embedding_model: str = "text-embedding-ada-002",
+                 embedding_model: str = "hf:sentence-transformers/all-MiniLM-L6-v2",
                  trace_id: str = None,
                  session_id: str = None,
                  use_langfuse: bool = True,
@@ -108,58 +108,32 @@ class RAGVectorStore:
         return self.core_vector_store  # Return core store for backward compatibility
 
     def _get_embedding_function(self) -> Embeddings:
-        """Creates an embedding function using either LiteLLM or HuggingFace.
-
-        If the embedding_model starts with 'hf:' it will use HuggingFaceEmbeddings locally.
-        Otherwise, it will use LiteLLM for cloud-based embeddings.
-
-        Returns:
-            Embeddings: A LangChain Embeddings instance
-        """
-        # Check if we're using a HuggingFace model locally
+        """Creates an embedding function using HuggingFaceEmbeddings locally."""
         if self.embedding_model.startswith('hf:'):
-            # Extract the model name after the 'hf:' prefix
             model_name = self.embedding_model[3:]
             print(f"Using HuggingFaceEmbeddings with model: {model_name}")
-            
-            # Create HuggingFaceEmbeddings with the specified model
             return HuggingFaceEmbeddings(
                 model_name=model_name,
-                model_kwargs={'device': 'cpu'},  # Use CPU by default, can be changed to 'cuda' for GPU
-                encode_kwargs={'normalize_embeddings': True}  # Normalize embeddings for better similarity search
+                model_kwargs={'device': 'cpu'},
+                encode_kwargs={'normalize_embeddings': True}
+            )
+        elif self.embedding_model == "Alibaba-NLP/gte-modernbert-base":
+            print(f"Using HuggingFaceEmbeddings with model: {self.embedding_model}")
+            # Add memory optimizations for the larger model
+            return HuggingFaceEmbeddings(
+                model_name=self.embedding_model,
+                model_kwargs={
+                    'device': 'cpu',
+                    # Force garbage collection after inference
+                    'torch_dtype': 'float16'  # Use half-precision to save memory
+                },
+                encode_kwargs={
+                    'normalize_embeddings': True,
+                    'batch_size': 8  # Reduce batch size for lower memory consumption
+                }
             )
         else:
-            # Use LiteLLM for cloud-based embeddings
-            class LiteLLMEmbeddings(Embeddings):
-                def __init__(self, embedding_model):
-                    self.embedding_model = embedding_model
-                    self.parent_observation_id = None
-
-                def embed_documents(self, texts: list[str]) -> list[list[float]]:
-                    litellm.success_callback = []
-                    litellm.failure_callback = []
-                    response = embedding(
-                        model=self.embedding_model,
-                        input=texts,
-                        task_type="CODE_RETRIEVAL_QUERY" if self.embedding_model == "vertex_ai/text-embedding-005" else None
-                    )
-                    litellm.success_callback = ["langfuse"]
-                    litellm.failure_callback = ["langfuse"]
-                    return [r["embedding"] for r in response["data"]]
-                
-                def embed_query(self, text: str) -> list[float]:
-                    litellm.success_callback = []
-                    litellm.failure_callback = []
-                    response = embedding(
-                        model=self.embedding_model,
-                        input=[text],
-                        task_type="CODE_RETRIEVAL_QUERY" if self.embedding_model == "vertex_ai/text-embedding-005" else None
-                    )
-                    litellm.success_callback = ["langfuse"]
-                    litellm.failure_callback = ["langfuse"]
-                    return response["data"][0]["embedding"]
-            
-            return LiteLLMEmbeddings(self.embedding_model)
+            raise ValueError("Only HuggingFace embeddings are supported in this configuration.")
 
     def _create_core_store(self):
         """Creates the main ChromaDB vector store for Manim core documentation.
@@ -279,6 +253,9 @@ class RAGVectorStore:
         manim_core_formatted_results = []
         manim_plugin_formatted_results = []
         
+        # Initialize span with a dummy object if not using Langfuse
+        span_id = None
+        
         # Create a Langfuse span if enabled
         if self.use_langfuse:
             langfuse = Langfuse()
@@ -291,49 +268,76 @@ class RAGVectorStore:
                     "session_id": self.session_id
                 }
             )
+            span_id = span.id
         
-        # Separate queries by type
+        import gc
+        
+        # Process in smaller batches to prevent memory issues
+        # First, separate queries by type
         manim_core_queries = [query for query in queries if query["type"] == "manim-core"]
         manim_plugin_queries = [query for query in queries if query["type"] != "manim-core" and query["type"] in self.plugin_stores]
         
         if len([q for q in queries if q["type"] != "manim-core"]) != len(manim_plugin_queries):
             print("Warning: Some plugin queries were skipped because their types weren't found in available plugin stores")
         
-        # Search in core manim docs
-        for query in manim_core_queries:
-            query_text = query["query"]
-            self.core_vector_store._embedding_function.parent_observation_id = span.id
-            manim_core_results = self.core_vector_store.similarity_search_with_relevance_scores(
-                query=query_text,
-                k=k,
-                score_threshold=0.5
-            )
-            for result in manim_core_results:
-                manim_core_formatted_results.append({
-                    "query": query_text,
-                    "source": result[0].metadata['source'],
-                    "content": result[0].page_content,
-                    "score": result[1]
-                })
+        # Process core queries in smaller batches to reduce memory usage
+        batch_size = 2  # Process just 2 queries at a time
+        for i in range(0, len(manim_core_queries), batch_size):
+            batch_queries = manim_core_queries[i:i+batch_size]
+            
+            # Search in core manim docs for this batch
+            for query in batch_queries:
+                query_text = query["query"]
+                if self.use_langfuse:
+                    self.core_vector_store._embedding_function.parent_observation_id = span_id
+                try:
+                    manim_core_results = self.core_vector_store.similarity_search_with_relevance_scores(
+                        query=query_text,
+                        k=k,
+                        score_threshold=0.5
+                    )
+                    for result in manim_core_results:
+                        manim_core_formatted_results.append({
+                            "query": query_text,
+                            "source": result[0].metadata['source'],
+                            "content": result[0].page_content,
+                            "score": result[1]
+                        })
+                except Exception as e:
+                    print(f"Error searching for '{query_text}': {e}")
+            
+            # Force garbage collection after each batch to free memory
+            gc.collect()
         
-        # Search in relevant plugin docs
-        for query in manim_plugin_queries:
-            plugin_name = query["type"]
-            query_text = query["query"]
-            self.plugin_stores[plugin_name]._embedding_function.parent_observation_id = span.id
-            if plugin_name in self.plugin_stores:
-                plugin_results = self.plugin_stores[plugin_name].similarity_search_with_relevance_scores(
-                    query=query_text,
-                    k=k,
-                    score_threshold=0.5
-                )
-                for result in plugin_results:
-                    manim_plugin_formatted_results.append({
-                        "query": query_text,
-                        "source": result[0].metadata['source'],
-                        "content": result[0].page_content,
-                        "score": result[1]
-                    })
+        # Process plugin queries in smaller batches
+        for i in range(0, len(manim_plugin_queries), batch_size):
+            batch_queries = manim_plugin_queries[i:i+batch_size]
+            
+            # Search in relevant plugin docs for this batch
+            for query in batch_queries:
+                plugin_name = query["type"]
+                query_text = query["query"]
+                if self.use_langfuse and plugin_name in self.plugin_stores:
+                    self.plugin_stores[plugin_name]._embedding_function.parent_observation_id = span_id
+                if plugin_name in self.plugin_stores:
+                    try:
+                        plugin_results = self.plugin_stores[plugin_name].similarity_search_with_relevance_scores(
+                            query=query_text,
+                            k=k,
+                            score_threshold=0.5
+                        )
+                        for result in plugin_results:
+                            manim_plugin_formatted_results.append({
+                                "query": query_text,
+                                "source": result[0].metadata['source'],
+                                "content": result[0].page_content,
+                                "score": result[1]
+                            })
+                    except Exception as e:
+                        print(f"Error searching plugin '{plugin_name}' for '{query_text}': {e}")
+            
+            # Force garbage collection after each batch
+            gc.collect()
         
         print(f"Number of results before removing duplicates: {len(manim_core_formatted_results) + len(manim_plugin_formatted_results)}")
         
@@ -341,27 +345,46 @@ class RAGVectorStore:
         manim_core_unique_results = []
         manim_plugin_unique_results = []
         seen = set()
+        
+        # Process core results in batches to reduce memory pressure
         for item in manim_core_formatted_results:
             key = item['content']
             if key not in seen:
                 manim_core_unique_results.append(item)
                 seen.add(key)
+        
+        # Process plugin results in batches
         for item in manim_plugin_formatted_results:
             key = item['content']
             if key not in seen:
                 manim_plugin_unique_results.append(item)
                 seen.add(key)
         
+        # Free memory by clearing the original results
+        manim_core_formatted_results = []
+        manim_plugin_formatted_results = []
+        gc.collect()
+        
         print(f"Number of results after removing duplicates: {len(manim_core_unique_results) + len(manim_plugin_unique_results)}")
         
-        total_tokens = sum(len(self.enc.encode(res['content'])) for res in manim_core_unique_results + manim_plugin_unique_results)
+        # Calculate total tokens in batches
+        total_tokens = 0
+        batch_size = 10
+        for i in range(0, len(manim_core_unique_results), batch_size):
+            batch = manim_core_unique_results[i:i+batch_size]
+            total_tokens += sum(len(self.enc.encode(res['content'])) for res in batch)
+        
+        for i in range(0, len(manim_plugin_unique_results), batch_size):
+            batch = manim_plugin_unique_results[i:i+batch_size]
+            total_tokens += sum(len(self.enc.encode(res['content'])) for res in batch)
+        
         print(f"Total tokens for the RAG search: {total_tokens}")
         
         # Update Langfuse with the deduplicated results
         if self.use_langfuse:
-            filtered_results_markdown = json.dumps(manim_core_unique_results + manim_plugin_unique_results, indent=2)
-            span.update( # Use span.update, not span.end
-                output=filtered_results_markdown,
+            # Only send summary statistics to avoid large data transfer
+            span.update(
+                output=f"Found {len(manim_core_unique_results)} core results and {len(manim_plugin_unique_results)} plugin results",
                 metadata={
                     "total_tokens": total_tokens,
                     "initial_results_count": len(manim_core_formatted_results) + len(manim_plugin_formatted_results),
@@ -369,7 +392,23 @@ class RAGVectorStore:
                 }
             )
 
-        manim_core_results = "Please refer to the following Manim core documentation that may be helpful for the code generation:\n\n" + "\n\n".join([f"Content:\n````text\n{res['content']}\n````\nScore: {res['score']}" for res in manim_core_unique_results])
-        manim_plugin_results = "Please refer to the following Manim plugin documentation that may be helpful for the code generation:\n\n" + "\n\n".join([f"Content:\n````text\n{res['content']}\n````\nScore: {res['score']}" for res in manim_plugin_unique_results])
+        # Generate the formatted results strings in batches to reduce memory usage
+        manim_core_results = "Please refer to the following Manim core documentation that may be helpful for the code generation:\n\n"
+        
+        for i in range(0, len(manim_core_unique_results), batch_size):
+            batch = manim_core_unique_results[i:i+batch_size]
+            manim_core_results += "\n\n".join([f"Content:\n````text\n{res['content']}\n````\nScore: {res['score']}" for res in batch])
+            if i + batch_size < len(manim_core_unique_results):
+                manim_core_results += "\n\n"
+                
+        manim_plugin_results = "Please refer to the following Manim plugin documentation that may be helpful for the code generation:\n\n"
+        
+        for i in range(0, len(manim_plugin_unique_results), batch_size):
+            batch = manim_plugin_unique_results[i:i+batch_size]
+            manim_plugin_results += "\n\n".join([f"Content:\n````text\n{res['content']}\n````\nScore: {res['score']}" for res in batch])
+            if i + batch_size < len(manim_plugin_unique_results):
+                manim_plugin_results += "\n\n"
+        
+        gc.collect()  # Final garbage collection before returning
         
         return manim_core_results + "\n\n" + manim_plugin_results

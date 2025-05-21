@@ -86,7 +86,7 @@ class VideoGenerator:
                  context_learning_path="data/context_learning",
                  chroma_db_path="data/rag/chroma_db",
                  manim_docs_path="data/rag/manim_docs",
-                 embedding_model="azure/text-embedding-3-large",
+                 embedding_model="hf:sentence-transformers/all-MiniLM-L6-v2",
                  use_visual_fix_code=False,
                  use_langfuse=True,
                  trace_id=None,
@@ -494,6 +494,10 @@ class VideoGenerator:
         file_prefix = topic.lower()
         file_prefix = re.sub(r'[^a-z0-9_]+', '_', file_prefix)
         
+        # Create topic directory if it doesn't exist
+        topic_dir = os.path.join(self.output_dir, file_prefix)
+        os.makedirs(topic_dir, exist_ok=True)
+        
         # Load or generate scene outline
         scene_outline_path = os.path.join(self.output_dir, file_prefix, f"{file_prefix}_scene_outline.txt")
         if os.path.exists(scene_outline_path):
@@ -506,16 +510,29 @@ class VideoGenerator:
                 print(f"Detected relevant plugins: {self.planner.relevant_plugins}")
         else:
             print(f"Generating new scene outline for topic: {topic}")
+            # Set up RAG integration for new topic if enabled
+            if self.planner.use_rag:
+                self.planner.relevant_plugins = self.planner.rag_integration.detect_relevant_plugins(topic, description) or []
+                self.planner.rag_integration.set_relevant_plugins(self.planner.relevant_plugins)
+                print(f"Detected relevant plugins: {self.planner.relevant_plugins}")
+                
             scene_outline = self.planner.generate_scene_outline(topic, description, session_id)
-            os.makedirs(os.path.join(self.output_dir, file_prefix), exist_ok=True)
             with open(scene_outline_path, "w") as f:
                 f.write(scene_outline)
+                
+            print(f"Generated and saved new scene outline for topic: {topic}")
+
+        # Extract scene outline content to get number of scenes
+        scene_outline_content = extract_xml(scene_outline)
+        scene_numbers = len(re.findall(r'<SCENE_(\d+)>[^<]', scene_outline_content))
+        if scene_numbers == 0:
+            print(f"Error: No scenes found in outline for topic '{topic}'. Please check the scene outline.")
+            return
+        print(f"Found {scene_numbers} scenes in outline.")
 
         # Load or generate implementation plans
         implementation_plans_dict = self.load_implementation_plans(topic)
         if not implementation_plans_dict:
-            scene_outline_content = extract_xml(scene_outline)
-            scene_numbers = len(re.findall(r'<SCENE_(\d+)>[^<]', scene_outline_content))
             implementation_plans_dict = {i: None for i in range(1, scene_numbers + 1)}
 
         # Generate missing implementation plans for specified scenes or all missing scenes
@@ -532,10 +549,15 @@ class VideoGenerator:
                 if scene_match:
                     scene_outline_i = scene_match.group(1)
                     scene_trace_id = str(uuid.uuid4())
+                    
+                    # Create scene directory if it doesn't exist
+                    scene_dir = os.path.join(self.output_dir, file_prefix, f"scene{scene_num}")
+                    os.makedirs(scene_dir, exist_ok=True)
+                    
                     implementation_plan = await self._generate_scene_implementation_single(
                         topic, description, scene_outline_i, scene_num, file_prefix, session_id, scene_trace_id)
                     implementation_plans_dict[scene_num] = implementation_plan
-
+        
         if only_plan:
             print(f"Only generating plans - skipping code generation and video rendering for topic: {topic}")
             return
@@ -544,6 +566,10 @@ class VideoGenerator:
         sorted_scene_numbers = sorted(implementation_plans_dict.keys())
         implementation_plans = [implementation_plans_dict[i] for i in sorted_scene_numbers]
         
+        # Clear variables to free memory
+        scene_outline_content = None
+        implementation_plans_dict = None
+        
         # Render scenes
         print(f"Starting video rendering for topic: {topic}")
         
@@ -551,6 +577,8 @@ class VideoGenerator:
         scenes_to_process = []
         for i, implementation_plan in enumerate(implementation_plans):
             scene_dir = os.path.join(self.output_dir, file_prefix, f"scene{i+1}")
+            os.makedirs(scene_dir, exist_ok=True)  # Ensure scene directory exists
+            
             code_dir = os.path.join(scene_dir, "code")
             
             # Check if scene has any code files
@@ -559,15 +587,16 @@ class VideoGenerator:
                 if any(f.endswith('.py') for f in os.listdir(code_dir)):
                     has_code = True
             
-            # For only_render mode, only process scenes without code
-            if args.only_render:
+            # For command-line only_render flag, only process scenes without code
+            only_render = getattr(self, 'only_render', False)
+            if only_render:
                 if not has_code:
                     scenes_to_process.append((i+1, implementation_plan))
                     print(f"Scene {i+1} has no code, will process")
                 else:
                     print(f"Scene {i+1} already has code, skipping")
             # For normal mode, process scenes that haven't been successfully rendered
-            elif not os.path.exists(os.path.join(scene_dir, "succ_rendered.txt")):
+            elif implementation_plan is not None and not os.path.exists(os.path.join(scene_dir, "succ_rendered.txt")):
                 scenes_to_process.append((i+1, implementation_plan))
         
         if not scenes_to_process:
@@ -580,11 +609,43 @@ class VideoGenerator:
             scene_plans.sort(key=lambda x: x[0])
             # Extract just the plans in the correct order
             filtered_implementation_plans = [plan for _, plan in scene_plans]
-            await self.render_video_fix_code(topic, description, scene_outline, filtered_implementation_plans,
-                                           max_retries=max_retries, session_id=session_id)
+            
+            # Process scenes one by one instead of all at once to reduce memory usage
+            # This is a major change to prevent OOM errors
+            if self.scene_semaphore.locked():  # Reset semaphore if it's locked
+                self.scene_semaphore = asyncio.Semaphore(1)  # Force sequential processing
+            
+            # Process scenes sequentially
+            for i, plan in enumerate(filtered_implementation_plans):
+                scene_num = scenes_to_process[i][0]
+                print(f"Processing scene {scene_num} individually to manage memory...")
+                
+                # Create a single-item list for this scene's plan
+                single_plan_list = [plan]
+                
+                # Process just this one scene
+                await self.render_video_fix_code(
+                    topic, 
+                    description, 
+                    scene_outline,
+                    single_plan_list,
+                    max_retries=max_retries, 
+                    session_id=session_id
+                )
         
-        if not args.only_render:  # Skip video combination in only_render mode
+        # Create necessary directories for video combination
+        media_dir = os.path.join(self.output_dir, file_prefix, "media")
+        os.makedirs(media_dir, exist_ok=True)
+        videos_dir = os.path.join(media_dir, "videos")
+        os.makedirs(videos_dir, exist_ok=True)
+        
+        # Skip video combination in only_render mode
+        only_render = getattr(self, 'only_render', False)
+        if not only_render:
             print(f"Video rendering completed for topic '{topic}'.")
+            print(f"Combining videos for topic '{topic}'...")
+            
+            self.combine_videos(topic)
 
     def check_theorem_status(self, theorem: Dict) -> Dict[str, bool]:
         """
@@ -953,3 +1014,4 @@ if __name__ == "__main__":
     else:
         print("Please provide either (--theorems_path) or (--topic and --context)")
         exit()
+

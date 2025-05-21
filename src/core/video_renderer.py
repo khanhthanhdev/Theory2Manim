@@ -227,26 +227,56 @@ class VideoRenderer:
             print(f"Combined video and subtitles already exist at {output_video_path}, not combining again.")
             return
 
-        # Get scene count from outline
-        scene_outline_path = os.path.join(self.output_dir, file_prefix, f"{file_prefix}_scene_outline.txt")
-        if not os.path.exists(scene_outline_path):
-            print(f"Warning: Scene outline file not found at {scene_outline_path}. Cannot determine scene count.")
+        # Check if the directory structure exists
+        if not os.path.exists(search_path):
+            print(f"Video directory not found at {search_path}. Creating directory structure for new topic.")
+            os.makedirs(search_path, exist_ok=True)
             return
-        with open(scene_outline_path) as f:
-            plan = f.read()
-        scene_outline = re.search(r'(<SCENE_OUTLINE>.*?</SCENE_OUTLINE>)', plan, re.DOTALL).group(1)
-        scene_count = len(re.findall(r'<SCENE_(\d+)>[^<]', scene_outline))
 
-        # Find all scene folders and videos
+        scene_count = 0
+        scene_outline_path = os.path.join(self.output_dir, file_prefix, f"{file_prefix}_scene_outline.txt")
+        
+        # Try to get scene count from outline file if it exists
+        if os.path.exists(scene_outline_path):
+            with open(scene_outline_path) as f:
+                plan = f.read()
+            match = re.search(r'(<SCENE_OUTLINE>.*?</SCENE_OUTLINE>)', plan, re.DOTALL)
+            if match:
+                scene_outline = match.group(1)
+                scene_count = len(re.findall(r'<SCENE_(\d+)>[^<]', scene_outline))
+                print(f"Found {scene_count} scenes in outline file.")
+        
+        # Find all scene folders and videos, regardless of whether we have an outline
         scene_folders = []
         for root, dirs, files in os.walk(search_path):
             for dir in dirs:
                 if dir.startswith(file_prefix + "_scene"):
                     scene_folders.append(os.path.join(root, dir))
+        
+        # If we couldn't get scene count from outline but found scene folders, use that instead
+        if scene_count == 0 and scene_folders:
+            # Extract scene numbers from folder names and find the highest
+            scene_nums = []
+            for folder in scene_folders:
+                try:
+                    scene_part = folder.split("scene")[-1].split("_")[0]
+                    if scene_part.isdigit():
+                        scene_nums.append(int(scene_part))
+                except (IndexError, ValueError):
+                    continue
+                    
+            if scene_nums:
+                scene_count = max(scene_nums)
+                print(f"No valid scene outline found, but detected {scene_count} scenes from folders.")
+        
+        if scene_count == 0:
+            print(f"No scenes need processing for topic '{topic}'. Add scenes before combining videos.")
+            return
 
         scene_videos = []
         scene_subtitles = []
 
+        # Process all scenes
         for scene_num in range(1, scene_count + 1):
             folders = [f for f in scene_folders if int(f.split("scene")[-1].split("_")[0]) == scene_num]
             if not folders:
@@ -254,16 +284,22 @@ class VideoRenderer:
                 continue
 
             folders.sort(key=lambda f: int(f.split("_v")[-1]))
-            folder = folders[-1]
+            folder = folders[-1]  # Use the highest version number
+
+            # Check if the 1080p60 folder exists
+            hd_folder = os.path.join(folder, "1080p60")
+            if not os.path.exists(hd_folder):
+                print(f"Warning: No 1080p60 folder found for scene {scene_num}")
+                continue
 
             video_found = False
             subtitles_found = False
-            for filename in os.listdir(os.path.join(folder, "1080p60")):
+            for filename in os.listdir(hd_folder):
                 if filename.endswith('.mp4'):
-                    scene_videos.append(os.path.join(folder, "1080p60", filename))
+                    scene_videos.append(os.path.join(hd_folder, filename))
                     video_found = True
                 elif filename.endswith('.srt'):
-                    scene_subtitles.append(os.path.join(folder, "1080p60", filename))
+                    scene_subtitles.append(os.path.join(hd_folder, filename))
                     subtitles_found = True
 
             if not video_found:
@@ -271,9 +307,10 @@ class VideoRenderer:
             if not subtitles_found:
                 scene_subtitles.append(None)
 
-        # if len(scene_videos) != scene_count:
-        #     print("Not all videos/subtitles are found, aborting video combination.")
-        #     return
+        # If we don't have any videos, return early
+        if not scene_videos:
+            print(f"No videos found for topic '{topic}'. Please render scenes before combining.")
+            return
 
         try:
             import ffmpeg # You might need to install ffmpeg-python package: pip install ffmpeg-python
