@@ -123,6 +123,10 @@ def extract_xml(response: str) -> str:
         str: The extracted XML content, or the full response if no XML blocks found
     """
     try:
-        return re.search(r'```xml\n(.*?)\n```', response, re.DOTALL).group(1)
-    except:
+        match = re.search(r'```xml\n(.*?)\n```', response, re.DOTALL)
+        if match:
+            return match.group(1)
+        else:
+            return response
+    except Exception:
         return response
