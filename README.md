@@ -11,6 +11,8 @@
 
 This repo contains the codebase for our paper [TheoremExplainAgent: Towards Multimodal Explanations for LLM Theorem Understanding](https://arxiv.org/abs/2502.19400)
 
+**ACL 2025 main**
+
 ## Introduction
 TheoremExplainAgent is an AI system that generates long-form Manim videos to visually explain theorems, proving its deep understanding while uncovering reasoning flaws that text alone often hides.
 
@@ -20,6 +22,7 @@ https://github.com/user-attachments/assets/17f2f4f2-8f2c-4abc-b377-ac92ebda69f3
 
 
 ## 📰 News
+* 2025 May 15: Paper accepted to ACL 2025 main conference.
 * 2025 Mar 3: Generation code and Evaluation code released. Thanks for the wait!
 <!--* 2025 Mar 3: Reach 404 stars without code.-->
 * 2025 Feb 27: Paper available on [Arxiv](https://arxiv.org/abs/2502.19400). Thanks AK for putting our paper on [HF Daily](https://huggingface.co/papers/2502.19400).
