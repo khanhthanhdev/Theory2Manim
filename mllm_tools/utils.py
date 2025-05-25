@@ -5,6 +5,7 @@ import tempfile
 import os
 from .gemini import GeminiWrapper
 from .vertex_ai import VertexAIWrapper
+from .openrouter import OpenRouterWrapper
 
 
 def _prepare_text_inputs(texts: List[str]) -> List[Dict[str, str]]:
@@ -145,25 +146,27 @@ def _upload_to_gemini(input, mime_type=None):
     #print(f"Uploaded file '{file.display_name}' as: {file.uri}")
     return file
 
-def get_media_wrapper(model_name: str) -> Optional[Union[GeminiWrapper, VertexAIWrapper]]:
+def get_media_wrapper(model_name: str) -> Optional[Union[GeminiWrapper, VertexAIWrapper, OpenRouterWrapper]]:
     """Get appropriate wrapper for media handling based on model name"""
     if model_name.startswith('gemini/'):
         return GeminiWrapper(model_name=model_name.split('/')[-1])
     elif model_name.startswith('vertex_ai/'):
         return VertexAIWrapper(model_name=model_name.split('/')[-1])
+    elif model_name.startswith('openrouter/'):
+        return OpenRouterWrapper(model_name=model_name)
     return None
 
 def prepare_media_messages(prompt: str, media_path: Union[str, Image.Image], model_name: str) -> List[Dict[str, Any]]:
     """Prepare messages for media input based on model type"""
     is_video = isinstance(media_path, str) and media_path.endswith('.mp4')
     
-    if is_video and (model_name.startswith('gemini/') or model_name.startswith('vertex_ai/')):
+    if is_video and (model_name.startswith('gemini/') or model_name.startswith('vertex_ai/') or model_name.startswith('openrouter/')):
         return [
             {"type": "text", "content": prompt},
             {"type": "video", "content": media_path}
         ]
     else:
-        # For images or non-Gemini/Vertex models
+        # For images or non-video content
         if isinstance(media_path, str):
             media = Image.open(media_path)
         else:

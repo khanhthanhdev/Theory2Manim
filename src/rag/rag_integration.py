@@ -12,7 +12,7 @@ from task_generator import (
     get_prompt_rag_query_generation_narration,
     get_prompt_rag_query_generation_code
 )
-from src.rag.vector_store import RAGVectorStore
+from src.rag.vector_store import EnhancedRAGVectorStore as RAGVectorStore
 
 class RAGIntegration:
     """Class for integrating RAG (Retrieval Augmented Generation) functionality.
@@ -80,9 +80,12 @@ class RAGIntegration:
             response = self.helper_model(
                 _prepare_text_inputs(prompt),
                 metadata={"generation_name": "detect-relevant-plugins", "tags": [topic, "plugin-detection"], "session_id": self.session_id}
-            )
-            # Clean the response to ensure it only contains the JSON array
-            response = re.search(r'```json(.*)```', response, re.DOTALL).group(1)
+            )            # Clean the response to ensure it only contains the JSON array
+            json_match = re.search(r'```json(.*)```', response, re.DOTALL)
+            if not json_match:
+                print(f"No JSON block found in plugin detection response: {response[:200]}...")
+                return []
+            response = json_match.group(1)
             try:
                 relevant_plugins = json.loads(response)
             except json.JSONDecodeError as e:
@@ -149,16 +152,19 @@ class RAGIntegration:
             scene_plan=scene_plan,
             relevant_plugins=plugins_str
         )
-        
         queries = self.helper_model(
             _prepare_text_inputs(prompt),
             metadata={"generation_name": "rag_query_generation_storyboard", "trace_id": scene_trace_id, "tags": [topic, f"scene{scene_number}"], "session_id": session_id}
         )
-
+        
         # retreive json triple backticks
         
         try: # add try-except block to handle potential json decode errors
-            queries = re.search(r'```json(.*)```', queries, re.DOTALL).group(1)
+            json_match = re.search(r'```json(.*)```', queries, re.DOTALL)
+            if not json_match:
+                print(f"No JSON block found in storyboard RAG queries response: {queries[:200]}...")
+                return []
+            queries = json_match.group(1)
             queries = json.loads(queries)
         except json.JSONDecodeError as e:
             print(f"JSONDecodeError when parsing RAG queries for storyboard: {e}")
@@ -192,8 +198,7 @@ class RAGIntegration:
 
         if os.path.exists(cache_file):
             with open(cache_file, 'r') as f:
-                return json.load(f)
-
+                return json.load(f)        
         prompt = get_prompt_rag_query_generation_technical(
             storyboard=storyboard,
             relevant_plugins=", ".join(relevant_plugins) if relevant_plugins else "No plugins are relevant."
@@ -205,7 +210,11 @@ class RAGIntegration:
         )
 
         try: # add try-except block to handle potential json decode errors
-            queries = re.search(r'```json(.*)```', queries, re.DOTALL).group(1)
+            json_match = re.search(r'```json(.*)```', queries, re.DOTALL)
+            if not json_match:
+                print(f"No JSON block found in technical RAG queries response: {queries[:200]}...")
+                return []
+            queries = json_match.group(1)
             queries = json.loads(queries)
         except json.JSONDecodeError as e:
             print(f"JSONDecodeError when parsing RAG queries for technical implementation: {e}")
@@ -240,7 +249,7 @@ class RAGIntegration:
         if os.path.exists(cache_file):
             with open(cache_file, 'r') as f:
                 return json.load(f)
-
+                
         prompt = get_prompt_rag_query_generation_narration(
             storyboard=storyboard,
             relevant_plugins=", ".join(relevant_plugins) if relevant_plugins else "No plugins are relevant."
@@ -252,7 +261,11 @@ class RAGIntegration:
         )
 
         try: # add try-except block to handle potential json decode errors
-            queries = re.search(r'```json(.*)```', queries, re.DOTALL).group(1)
+            json_match = re.search(r'```json(.*)```', queries, re.DOTALL)
+            if not json_match:
+                print(f"No JSON block found in narration RAG queries response: {queries[:200]}...")
+                return []
+            queries = json_match.group(1)
             queries = json.loads(queries)
         except json.JSONDecodeError as e:
             print(f"JSONDecodeError when parsing narration RAG queries: {e}")
@@ -311,7 +324,7 @@ class RAGIntegration:
             implementation_plan=implementation_plan,
             relevant_plugins=", ".join(relevant_plugins) if relevant_plugins else "No plugins are relevant."
         )
-
+        
         try:
             response = self.helper_model(
                 _prepare_text_inputs(prompt),
@@ -319,7 +332,11 @@ class RAGIntegration:
             )
             
             # Clean and parse response
-            response = re.search(r'```json(.*)```', response, re.DOTALL).group(1)
+            json_match = re.search(r'```json(.*)```', response, re.DOTALL)
+            if not json_match:
+                print(f"No JSON block found in code RAG queries response: {response[:200]}...")
+                return []
+            response = json_match.group(1)
             queries = json.loads(response)
 
             # Cache the queries
@@ -373,10 +390,13 @@ class RAGIntegration:
             metadata={"generation_name": "rag-query-generation-fix-error", "trace_id": scene_trace_id, "tags": [topic, f"scene{scene_number}"], "session_id": session_id}
         )
 
-
         try:  
             # retrieve json triple backticks
-            queries = re.search(r'```json(.*)```', queries, re.DOTALL).group(1)
+            json_match = re.search(r'```json(.*)```', queries, re.DOTALL)
+            if not json_match:
+                print(f"No JSON block found in error fix RAG queries response: {queries[:200]}...")
+                return []
+            queries = json_match.group(1)
             queries = json.loads(queries)
         except json.JSONDecodeError as e:
             print(f"JSONDecodeError when parsing RAG queries for error fix: {e}")

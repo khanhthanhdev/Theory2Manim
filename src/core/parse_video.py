@@ -108,7 +108,7 @@ def parse_srt_and_extract_frames(output_dir, topic_name):
     images_dir = os.path.join(output_dir, topic_name, "extract_images")
     if os.path.exists(images_dir):
         shutil.rmtree(images_dir)
-    os.makedirs(images_dir)
+    os.makedirs(images_dir, exist_ok=True)
     
     # Load the video file
     video = VideoFileClip(video_path)

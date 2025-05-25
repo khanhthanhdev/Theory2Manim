@@ -10,7 +10,7 @@ class Config:
     CONTEXT_LEARNING_PATH = "data/context_learning"
     CHROMA_DB_PATH = "data/rag/chroma_db"
     MANIM_DOCS_PATH = "data/rag/manim_docs"
-    EMBEDDING_MODEL = "azure/text-embedding-3-large"
+    EMBEDDING_MODEL = "hf:ibm-granite/granite-embedding-30m-english"
     
     # Kokoro TTS configurations
     KOKORO_MODEL_PATH = os.getenv('KOKORO_MODEL_PATH')
