@@ -30,7 +30,7 @@ mdurl~=0.1.2
 moderngl~=5.12.0
 multipledispatch~=1.0.0
 mutagen~=1.47.0
-networkx~=3.4.2
+networkx~=3.2.1
 numpy~=2.2.2
 pillow
 proto-plus~=1.25.0
@@ -99,3 +99,4 @@ statsmodels~=0.14.4
 opencv-python~=4.11.0
 streamlit
 sentence-transformers
+gradio

@@ -922,4 +922,12 @@ with gr.Blocks(
 
 # Launch the app
 if __name__ == "__main__":
-    app.queue().launch(server_name="127.0.0.1", share=False)
+    # Configure server for SSH tunnel access
+    # Use 0.0.0.0 to allow connections from any IP address
+    # Disable share to avoid conflicts with SSH tunneling
+    app.queue().launch(
+        server_name="0.0.0.0",
+        server_port=7860,  # Standard Gradio port
+        share=False,
+        show_error=True,
+    )
