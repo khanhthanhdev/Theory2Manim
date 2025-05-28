@@ -14,6 +14,7 @@ from typing import Dict, List, Optional
 from mllm_tools.litellm import LiteLLMWrapper
 from src.config.config import Config
 from generate_video import EnhancedVideoGenerator, VideoGenerationConfig, allowed_models
+from provider import provider_manager
 
 # Configure logging
 logging.basicConfig(
@@ -470,7 +471,7 @@ def update_status_display(job_id):
 
 # Create Gradio interface
 with gr.Blocks(
-    title="Theory2Manim Video Generator", 
+    title="Theory2Manim 3blue1brown Video Style Generator", 
     theme=gr.themes.Soft(
         primary_hue="blue",
         secondary_hue="slate",
@@ -510,10 +511,15 @@ with gr.Blocks(
         with gr.Column():
             gr.HTML("""
                 <div class="main-header">
-                    <h1>🎬 Theory2Manim Video Generator</h1>
+                    <h1>🎬 Theory2Manim 3blue1brown Video Style Generator</h1>
                     <p>Transform mathematical and scientific concepts into engaging educational videos</p>
                 </div>
             """)
+            gr.Markdown(
+                "⚠️ **Note:** Video generation typically takes **10–15 minutes** per request. "
+                "Each video may consume **700,000 to 1,000,000 tokens**. Please plan accordingly.",
+                elem_classes=["status-card"]
+            )
     
     # Statistics Dashboard
     with gr.Row():
@@ -538,25 +544,50 @@ with gr.Blocks(
                         lines=6,
                         info="The more detailed your description, the better the AI can generate relevant content"
                     )
-            
             with gr.Column(scale=1):
                 with gr.Group():
-                    gr.Markdown("### ⚙️ AI Model Settings")
+                    gr.Markdown("### 🌐 Provider & API Key")
+                    provider_input = gr.Dropdown(
+                        label="Provider",
+                        choices=provider_manager.get_providers(),
+                        value=provider_manager.get_providers()[0],
+                        interactive=True
+                    )
+                    api_key_input = gr.Textbox(
+                        label="API Key",
+                        placeholder="Enter your API key for the selected provider",
+                        type="password",
+                        value="",
+                        interactive=True
+                    )
+                    def update_models(provider):
+                        return gr.update(choices=provider_manager.get_models(provider), value=provider_manager.get_models(provider)[0] if provider_manager.get_models(provider) else None)
                     model_input = gr.Dropdown(
-                        label="🤖 Primary AI Model", 
-                        choices=list(MODEL_DESCRIPTIONS.keys()),
-                        value="gemini/gemini-2.5-flash-preview-04-17",
+                        label="🤖 Primary AI Model",
+                        choices=provider_manager.get_models(provider_manager.get_providers()[0]),
+                        value=provider_manager.get_models(provider_manager.get_providers()[0])[0],
                         info="Choose the AI model for content generation"
                     )
-                    model_description = gr.Markdown(MODEL_DESCRIPTIONS["gemini/gemini-2.5-flash-preview-04-17"])
-                    
+                    provider_input.change(
+                        fn=update_models,
+                        inputs=[provider_input],
+                        outputs=[model_input]
+                    )
+                    def save_api_key(provider, api_key):
+                        provider_manager.set_api_key(provider, api_key)
+                        return gr.update()
+                    api_key_input.blur(
+                        fn=save_api_key,
+                        inputs=[provider_input, api_key_input],
+                        outputs=[]
+                    )
+                    model_description = gr.Markdown(visible=False)
                     helper_model_input = gr.Dropdown(
                         label="🔧 Helper Model", 
                         choices=list(MODEL_DESCRIPTIONS.keys()),
                         value="gemini/gemini-2.5-flash-preview-04-17",
                         info="Model for auxiliary tasks"
                     )
-                    
                     temperature_input = gr.Slider(
                         label="🌡️ Creativity (Temperature)", 
                         minimum=0.0, 
